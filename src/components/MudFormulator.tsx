@@ -19,6 +19,8 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { AdditionalForms } from './AdditionalForms';
 import { AVAILABLE_PRODUCTS } from '../constants/products';
 import { BASE_OILS } from '../constants/baseOils';
+import AddAvailableProductForm from './AddAvailableProductForm';
+import axios from 'axios';
 
 const initialState: MudFormulation = {
     mudType: 'Water-Based Mud',
@@ -140,6 +142,15 @@ export const MudFormulator: React.FC = () => {
     }
     setConfirmDialogOpen(false);
     setProductToRemove(null);
+  };
+
+  const handleAddAvailableProduct = async (product: { name: string; details: string }) => {
+    try {
+      await axios.post('/api/available-products', product);
+      console.log('Available product added successfully');
+    } catch (error) {
+      console.error('Error adding available product:', error);
+    }
   };
 
   return (
@@ -441,6 +452,8 @@ export const MudFormulator: React.FC = () => {
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddProduct}
       />
+
+      <AddAvailableProductForm onAdd={handleAddAvailableProduct} />
     </Box>
   );
 }; 

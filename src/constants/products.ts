@@ -7,3 +7,5 @@ export const AVAILABLE_PRODUCTS = [
     { name: 'NEW DRILL PLUS', defaultSG: 0.850, defaultMethod: 'lb/bbl' },
     { name: 'Lube S', defaultSG: 0.910, defaultMethod: '% by volume' }
 ]; 
+
+let availableProducts = []; 
