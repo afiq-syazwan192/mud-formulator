@@ -12,26 +12,39 @@ export interface MudFormulation {
     weighted: string;
     mudWeight: number;
     desiredOil: number;
-    baseOil: {
-        type: string;
-        ratio: number;
-        specificGravity: number;
-    };
-    salinity: number;
-    saltPurity: number;
-    weightMaterial: {
-        type: string;
-        specificGravity: number;
-    };
+    baseOil: BaseOil;
+    waterAndSalt: WaterAndSalt[];
+    weightMaterial: WeightMaterial;
     products: Product[];
 }
 
 // Interface for calculation results
 export interface CalculationResult {
     totalVolume: number;
-    productAmounts: {
+    totalWeight: number;
+    finalMudWeight: number;
+    productAmounts: Array<{
         name: string;
         amount: number;
+        volume: number;
         unit: string;
-    }[];
+    }>;
+}
+
+export interface BaseOil {
+    type: string;
+    ratio: number;
+    specificGravity: number;
+}
+
+export interface WaterAndSalt {
+    type: string;
+    salinity: number;
+    saltPurity: number;
+    wtPercent: string;
+}
+
+export interface WeightMaterial {
+    type: string;
+    specificGravity: number;
 } 

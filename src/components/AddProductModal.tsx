@@ -3,14 +3,14 @@ import {
     Modal,
     Box,
     Typography,
-    TextField,
-    Button,
     Select,
     MenuItem,
+    Button,
     FormControl,
-    InputLabel,
+    InputLabel
 } from '@mui/material';
 import { Product } from '../types/types';
+import { AVAILABLE_PRODUCTS } from '../constants/products';
 
 interface AddProductModalProps {
     open: boolean;
@@ -30,72 +30,56 @@ const modalStyle = {
     borderRadius: 1,
 };
 
-export const AddProductModal: React.FC<AddProductModalProps> = ({ open, onClose, onAdd }) => {
-    const [newProduct, setNewProduct] = useState<Product>({
-        name: '',
-        concentration: 0,
-        specificGravity: 0,
-        additionMethod: 'lb/bbl'
-    });
+export const AddProductModal: React.FC<AddProductModalProps> = ({
+    open,
+    onClose,
+    onAdd
+}) => {
+    const [selectedProduct, setSelectedProduct] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onAdd(newProduct);
-        onClose();
-        // Reset form
-        setNewProduct({
-            name: '',
-            concentration: 0,
-            specificGravity: 0,
-            additionMethod: 'lb/bbl'
-        });
+    const handleAdd = () => {
+        const productDetails = AVAILABLE_PRODUCTS.find(p => p.name === selectedProduct);
+        if (productDetails) {
+            onAdd({
+                name: productDetails.name,
+                concentration: 0,
+                specificGravity: productDetails.defaultSG,
+                additionMethod: productDetails.defaultMethod
+            });
+            setSelectedProduct('');
+            onClose();
+        }
     };
 
     return (
         <Modal open={open} onClose={onClose}>
-            <Box sx={modalStyle} component="form" onSubmit={handleSubmit}>
+            <Box sx={modalStyle}>
                 <Typography variant="h6" component="h2" mb={2}>
                     Add New Product
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                        label="Product Name"
-                        value={newProduct.name}
-                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                        required
-                        fullWidth
-                    />
-                    <TextField
-                        label="Specific Gravity"
-                        type="number"
-                        value={newProduct.specificGravity || ''}
-                        onChange={(e) => setNewProduct({ 
-                            ...newProduct, 
-                            specificGravity: parseFloat(e.target.value) || 0 
-                        })}
-                        required
-                        fullWidth
-                        inputProps={{ step: 0.001 }}
-                    />
-                    <FormControl fullWidth>
-                        <InputLabel>Addition Method</InputLabel>
-                        <Select
-                            value={newProduct.additionMethod}
-                            onChange={(e) => setNewProduct({ 
-                                ...newProduct, 
-                                additionMethod: e.target.value 
-                            })}
-                            label="Addition Method"
-                            required
-                        >
-                            <MenuItem value="lb/bbl">lb/bbl</MenuItem>
-                            <MenuItem value="% by volume">% by volume</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
-                        <Button onClick={onClose}>Cancel</Button>
-                        <Button type="submit" variant="contained">Add Product</Button>
-                    </Box>
+                <FormControl fullWidth>
+                    <InputLabel>Select Product</InputLabel>
+                    <Select
+                        value={selectedProduct}
+                        onChange={(e) => setSelectedProduct(e.target.value)}
+                        label="Select Product"
+                    >
+                        {AVAILABLE_PRODUCTS.map((product) => (
+                            <MenuItem key={product.name} value={product.name}>
+                                {product.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button 
+                        variant="contained" 
+                        onClick={handleAdd}
+                        disabled={!selectedProduct}
+                    >
+                        Add
+                    </Button>
                 </Box>
             </Box>
         </Modal>

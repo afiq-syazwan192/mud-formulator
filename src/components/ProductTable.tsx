@@ -9,16 +9,33 @@ import {
   Paper,
   TextField,
   Select,
-  MenuItem
+  MenuItem,
+  IconButton,
+  Tooltip
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { Product } from '../types/types';
+import { AVAILABLE_PRODUCTS } from '../constants/products';
 
 interface ProductTableProps {
   products: Product[];
   onProductChange: (index: number, updatedProduct: Product) => void;
+  onProductRemove: (index: number) => void;
 }
 
-export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductChange }) => {
+export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductChange, onProductRemove }) => {
+  const handleProductNameChange = (index: number, productName: string) => {
+    const selectedProduct = AVAILABLE_PRODUCTS.find(p => p.name === productName);
+    if (selectedProduct) {
+      onProductChange(index, {
+        ...products[index],
+        name: productName,
+        specificGravity: selectedProduct.defaultSG,
+        additionMethod: selectedProduct.defaultMethod
+      });
+    }
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table size="small">
@@ -28,6 +45,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
             <TableCell>Concentration</TableCell>
             <TableCell>S.G.</TableCell>
             <TableCell>Select addition method</TableCell>
+            <TableCell align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -35,11 +53,18 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
             <TableRow key={index}>
               <TableCell>
                 <Select
-                  value={product.name}
-                  onChange={(e) => onProductChange(index, { ...product, name: e.target.value as string })}
                   fullWidth
+                  value={product.name}
+                  onChange={(e) => handleProductNameChange(index, e.target.value)}
                 >
-                  <MenuItem value={product.name}>{product.name}</MenuItem>
+                  {AVAILABLE_PRODUCTS.map((availableProduct) => (
+                    <MenuItem 
+                      key={availableProduct.name} 
+                      value={availableProduct.name}
+                    >
+                      {availableProduct.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </TableCell>
               <TableCell>
@@ -57,19 +82,36 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
                   fullWidth
                 />
               </TableCell>
-              <TableCell>{product.specificGravity}</TableCell>
+              <TableCell>
+                <TextField
+                  value={product.specificGravity}
+                  disabled
+                  fullWidth
+                />
+              </TableCell>
               <TableCell>
                 <Select
+                  fullWidth
                   value={product.additionMethod}
                   onChange={(e) => onProductChange(index, {
                     ...product,
                     additionMethod: e.target.value
                   })}
-                  fullWidth
                 >
                   <MenuItem value="lb/bbl">lb/bbl</MenuItem>
                   <MenuItem value="% by volume">% by volume</MenuItem>
                 </Select>
+              </TableCell>
+              <TableCell align="center">
+                <Tooltip title="Remove product">
+                  <IconButton
+                    onClick={() => onProductRemove(index)}
+                    color="error"
+                    size="small"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
               </TableCell>
             </TableRow>
           ))}
