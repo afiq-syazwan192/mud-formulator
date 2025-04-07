@@ -70,15 +70,12 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
               <TableCell>
                 <TextField
                   type="number"
-                  value={product.concentration === 0 ? "" : product.concentration}
+                  value={product.concentration || ""}
                   onChange={(e) => onProductChange(index, {
                     ...product,
                     concentration: e.target.value === "" ? 0 : parseFloat(e.target.value)
                   })}
-                  inputProps={{ 
-                    step: 0.1,
-                    placeholder: "Enter concentration"
-                  }}
+                  inputProps={{ step: 0.1, placeholder: "Enter concentration" }}
                   fullWidth
                 />
               </TableCell>

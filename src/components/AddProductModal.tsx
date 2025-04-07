@@ -37,17 +37,31 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 }) => {
     const [selectedProduct, setSelectedProduct] = useState('');
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         const productDetails = AVAILABLE_PRODUCTS.find(p => p.name === selectedProduct);
         if (productDetails) {
-            onAdd({
+            const newProduct = {
                 name: productDetails.name,
                 concentration: 0,
                 specificGravity: productDetails.defaultSG,
                 additionMethod: productDetails.defaultMethod
-            });
-            setSelectedProduct('');
-            onClose();
+            };
+            
+            // Save to database
+            try {
+                await fetch('http://localhost:5000/api/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newProduct)
+                });
+                onAdd(newProduct);
+                setSelectedProduct('');
+                onClose();
+            } catch (error) {
+                console.error('Error saving product:', error);
+            }
         }
     };
 

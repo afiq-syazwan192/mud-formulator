@@ -18,6 +18,7 @@ import { AddProductModal } from './AddProductModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AdditionalForms } from './AdditionalForms';
 import { AVAILABLE_PRODUCTS } from '../constants/products';
+import { BASE_OILS } from '../constants/baseOils';
 
 const initialState: MudFormulation = {
     mudType: 'Water-Based Mud',
@@ -123,8 +124,10 @@ export const MudFormulator: React.FC = () => {
   };
 
   const handleProductRemove = (index: number) => {
-    setProductToRemove(index);
-    setConfirmDialogOpen(true);
+    setFormulation(prev => ({
+        ...prev,
+        products: prev.products.filter((_, i) => i !== index)
+    }));
   };
 
   const handleConfirmRemove = () => {
@@ -187,10 +190,10 @@ export const MudFormulator: React.FC = () => {
                 <TextField
                   fullWidth
                   type="number"
-                  value={formulation.mudWeight}
+                  value={formulation.mudWeight || ""}
                   onChange={(e) => setFormulation({
                     ...formulation,
-                    mudWeight: parseFloat(e.target.value) || 0
+                    mudWeight: e.target.value === "" ? 0 : parseFloat(e.target.value)
                   })}
                   error={!!errors.mudWeight}
                   helperText={errors.mudWeight}
@@ -200,16 +203,16 @@ export const MudFormulator: React.FC = () => {
               <Grid item xs={6}>
                 <Typography>Desired % Oil</Typography>
                 <TextField
-                  fullWidth
                   type="number"
-                  value={formulation.desiredOil}
+                  value={formulation.desiredOil || ""}
                   onChange={(e) => setFormulation({
                     ...formulation,
-                    desiredOil: parseFloat(e.target.value) || 0
+                    desiredOil: e.target.value === "" ? 0 : parseFloat(e.target.value)
                   })}
                   error={!!errors.desiredOil}
                   helperText={errors.desiredOil}
-                  inputProps={{ step: 1 }}
+                  inputProps={{ min: 0, max: 100, step: 1 }}
+                  fullWidth
                 />
               </Grid>
             </Grid>
@@ -225,16 +228,25 @@ export const MudFormulator: React.FC = () => {
                 <Select
                   fullWidth
                   value={formulation.baseOil.type}
-                  onChange={(e) => setFormulation({
-                    ...formulation,
-                    baseOil: {
-                      ...formulation.baseOil,
-                      type: e.target.value
+                  onChange={(e) => {
+                    const selectedOil = BASE_OILS.find(oil => oil.type === e.target.value);
+                    if (selectedOil) {
+                        setFormulation({
+                            ...formulation,
+                            baseOil: {
+                                ...formulation.baseOil,
+                                type: selectedOil.type,
+                                specificGravity: selectedOil.specificGravity
+                            }
+                        });
                     }
-                  })}
+                  }}
                 >
-                  <MenuItem value="Canola Oil">Canola Oil</MenuItem>
-                  <MenuItem value="NONE">(NONE)</MenuItem>
+                  {BASE_OILS.map((oil) => (
+                    <MenuItem key={oil.type} value={oil.type}>
+                      {oil.type}
+                    </MenuItem>
+                  ))}
                 </Select>
               </Grid>
               <Grid item xs={4}>
@@ -242,22 +254,134 @@ export const MudFormulator: React.FC = () => {
                   fullWidth
                   label="Ratio %"
                   type="number"
-                  value={formulation.baseOil.ratio}
+                  value={formulation.baseOil.ratio || ""}
                   onChange={(e) => setFormulation({
                     ...formulation,
                     baseOil: {
                       ...formulation.baseOil,
-                      ratio: parseFloat(e.target.value) || 0
+                      ratio: e.target.value === "" ? 0 : parseFloat(e.target.value)
                     }
                   })}
+                  error={!!errors.baseOilRatio}
+                  helperText={errors.baseOilRatio}
+                  inputProps={{ min: 0, max: 100, step: 1 }}
                 />
               </Grid>
               <Grid item xs={4}>
                 <TextField
-                  fullWidth
                   label="S.G."
                   value={formulation.baseOil.specificGravity}
                   disabled
+                  fullWidth
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+
+        {/* Water and Salt Section */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="subtitle1">Add Water and Salt</Typography>
+            {formulation.waterAndSalt.map((item, index) => (
+              <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+                <Grid item xs={3}>
+                  <Select
+                    fullWidth
+                    value={item.type}
+                    onChange={(e) => {
+                      const newWaterAndSalt = [...formulation.waterAndSalt];
+                      newWaterAndSalt[index] = {
+                        ...item,
+                        type: e.target.value
+                      };
+                      setFormulation({
+                        ...formulation,
+                        waterAndSalt: newWaterAndSalt
+                      });
+                    }}
+                  >
+                    <MenuItem value="KCl">KCl</MenuItem>
+                    <MenuItem value="Water">Water</MenuItem>
+                  </Select>
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    label="Salinity"
+                    type="number"
+                    value={item.salinity || ""}
+                    onChange={(e) => {
+                      const newWaterAndSalt = [...formulation.waterAndSalt];
+                      newWaterAndSalt[index] = {
+                        ...item,
+                        salinity: e.target.value === "" ? 0 : parseFloat(e.target.value)
+                      };
+                      setFormulation({
+                        ...formulation,
+                        waterAndSalt: newWaterAndSalt
+                      });
+                    }}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    label="Salt Purity"
+                    type="number"
+                    value={item.saltPurity || ""}
+                    onChange={(e) => {
+                      const newWaterAndSalt = [...formulation.waterAndSalt];
+                      newWaterAndSalt[index] = {
+                        ...item,
+                        saltPurity: e.target.value === "" ? 0 : parseFloat(e.target.value)
+                      };
+                      setFormulation({
+                        ...formulation,
+                        waterAndSalt: newWaterAndSalt
+                      });
+                    }}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    label="Wt% Salt"
+                    value={item.wtPercent}
+                    disabled
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            ))}
+          </Paper>
+        </Grid>
+
+        {/* Weighting Material Section */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="subtitle1">Weight Material</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Select
+                  fullWidth
+                  value={formulation.weightMaterial.type}
+                  onChange={(e) => setFormulation({
+                    ...formulation,
+                    weightMaterial: {
+                      ...formulation.weightMaterial,
+                      type: e.target.value
+                    }
+                  })}
+                >
+                  <MenuItem value="MIL-BAR">MIL-BAR</MenuItem>
+                </Select>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  type="number"
+                  value={formulation.weightMaterial.specificGravity}
+                  disabled
+                  fullWidth
                 />
               </Grid>
             </Grid>
@@ -283,33 +407,32 @@ export const MudFormulator: React.FC = () => {
           </Grid>
         )}
 
-        {/* Action Buttons */}
+        {/* Products Section */}
         <Grid item xs={12}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button variant="contained" onClick={handleCalculate}>
-              Calculate
-            </Button>
-            <Button variant="contained" onClick={() => setFormulation(initialState)}>
-              Reset All
-            </Button>
-          </Box>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <Button
-              variant="contained"
-              onClick={() => setIsAddModalOpen(true)}
-              startIcon={<AddIcon />}
-            >
-              Add Product
-            </Button>
-          </Box>
           <ProductTable
             products={formulation.products}
             onProductChange={handleProductChange}
             onProductRemove={handleProductRemove}
           />
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, mt: 2, mx: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button variant="contained" onClick={handleCalculate}>
+                        Calculate
+                    </Button>
+                    <Button variant="contained" onClick={() => setFormulation(initialState)}>
+                        Reset All
+                    </Button>
+                </Box>
+                <Button
+                    variant="contained"
+                    onClick={() => setIsAddModalOpen(true)}
+                    startIcon={<AddIcon />}
+                >
+                    Add Product
+                </Button>
+            </Box>
+          </Grid>
         </Grid>
       </Grid>
 
