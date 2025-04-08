@@ -8,7 +8,10 @@ import {
   Paper,
   Grid,
   Typography,
-  styled
+  styled,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import { MudFormulation, Product, CalculationResult } from '../types/types';
 import { ProductTable } from './ProductTable';
@@ -60,6 +63,7 @@ export const MudFormulator: React.FC = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [productToRemove, setProductToRemove] = useState<number | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isAddAvailableModalOpen, setIsAddAvailableModalOpen] = useState(false);
 
   const handleProductChange = (index: number, updatedProduct: Product) => {
     const newProducts = [...formulation.products];
@@ -144,7 +148,11 @@ export const MudFormulator: React.FC = () => {
     setProductToRemove(null);
   };
 
-  const handleAddAvailableProduct = async (product: { name: string; details: string }) => {
+  const handleAddAvailableProduct = async (product: { 
+    name: string; 
+    specificGravity: number; 
+    function: string 
+  }) => {
     try {
       await axios.post('/api/available-products', product);
       console.log('Available product added successfully');
@@ -420,40 +428,71 @@ export const MudFormulator: React.FC = () => {
 
         {/* Products Section */}
         <Grid item xs={12}>
-          <ProductTable
-            products={formulation.products}
-            onProductChange={handleProductChange}
-            onProductRemove={handleProductRemove}
-          />
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, mt: 2, mx: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="contained" onClick={handleCalculate}>
-                        Calculate
-                    </Button>
-                    <Button variant="contained" onClick={() => setFormulation(initialState)}>
-                        Reset All
-                    </Button>
-                </Box>
+          <Paper sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1">Products</Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
-                    variant="contained"
-                    onClick={() => setIsAddModalOpen(true)}
-                    startIcon={<AddIcon />}
+                  variant="contained"
+                  onClick={() => setIsAddModalOpen(true)}
+                  startIcon={<AddIcon />}
                 >
-                    Add Product
+                  Add Product
                 </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => setIsAddAvailableModalOpen(true)}
+                >
+                  Add Available Product
+                </Button>
+                <Button variant="contained" onClick={handleCalculate}>
+                  Calculate
+                </Button>
+                <Button variant="outlined" onClick={handleReset}>
+                  Reset All
+                </Button>
+              </Box>
             </Box>
-          </Grid>
+            <ProductTable
+              products={formulation.products}
+              onProductChange={handleProductChange}
+              onProductRemove={handleProductRemove}
+            />
+          </Paper>
         </Grid>
       </Grid>
 
+      {/* Add Product Modal */}
       <AddProductModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddProduct}
       />
 
-      <AddAvailableProductForm onAdd={handleAddAvailableProduct} />
+      {/* Add Available Product Modal */}
+      <Dialog
+        open={isAddAvailableModalOpen}
+        onClose={() => setIsAddAvailableModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Available Product</DialogTitle>
+        <DialogContent>
+          <AddAvailableProductForm onAdd={(product) => {
+            handleAddAvailableProduct(product);
+            setIsAddAvailableModalOpen(false);
+          }} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        onConfirm={handleConfirmRemove}
+        title="Remove Product"
+        message="Are you sure you want to remove this product?"
+      />
     </Box>
   );
 }; 
