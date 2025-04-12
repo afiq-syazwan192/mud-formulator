@@ -1,9 +1,11 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { logout } from '../services/auth';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -19,6 +21,16 @@ const Navbar: React.FC = () => {
     borderBottom: active ? '2px solid white' : 'none',
     borderRadius: 0,
   });
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Don't show navbar on login page
+  if (location.pathname === '/login') {
+    return null;
+  }
 
   return (
     <AppBar position="static">
@@ -49,6 +61,17 @@ const Navbar: React.FC = () => {
             sx={buttonStyle(isActive('/saved-formulations'))}
           >
             Saved Formulations
+          </Button>
+          <Button
+            onClick={handleLogout}
+            sx={{
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+            }}
+          >
+            Logout
           </Button>
         </Box>
       </Toolbar>
