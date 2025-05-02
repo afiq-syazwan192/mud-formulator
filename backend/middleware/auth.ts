@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { JWT_CONFIG } from '../config/jwt';
 import { User, IUser } from '../models/User';
-import { AuthRequest } from '../types/auth';
 
 interface JwtPayload {
   userId: string;
@@ -16,24 +16,38 @@ declare global {
   }
 }
 
-export const auth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+const auth = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = JWT_CONFIG.getToken(req);
 
     if (!token) {
-      throw new Error('No token provided');
+      res.status(401).json({ error: 'No token, authorization denied' });
+      return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'defaultsecret') as { userId: string };
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      throw new Error('User not found');
+    try {
+      const decoded = jwt.verify(token, JWT_CONFIG.secret) as JwtPayload;
+      User.findById(decoded.userId)
+        .select('-password')
+        .then(user => {
+          if (!user) {
+            res.status(401).json({ error: 'User not found' });
+            return;
+          }
+          req.user = user;
+          next();
+        })
+        .catch(err => {
+          console.error('Auth middleware error:', err);
+          res.status(500).json({ error: 'Server error' });
+        });
+    } catch (err) {
+      res.status(401).json({ error: 'Token is not valid' });
     }
-
-    req.user = user.toObject() as IUser & { _id: string };
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Please authenticate.' });
+  } catch (err) {
+    console.error('Auth middleware error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
-}; 
+};
+
+export default auth; 

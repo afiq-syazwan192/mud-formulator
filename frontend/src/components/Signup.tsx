@@ -22,15 +22,31 @@ const Signup: React.FC = () => {
       return;
     }
 
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
     try {
+      console.log('Attempting signup with:', { email: formData.email });
       await signup({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
+      console.log('Signup successful');
       navigate('/login');
-    } catch (err) {
-      setError('Failed to create account. Please try again.');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.response?.data?.errors) {
+        setError(err.response.data.errors[0].msg);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to create account. Please try again.');
+      }
     }
   };
 

@@ -14,24 +14,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const jwt_1 = require("../config/jwt");
 const User_1 = require("../models/User");
 const auth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+        const token = jwt_1.JWT_CONFIG.getToken(req);
         if (!token) {
-            throw new Error('No token provided');
+            res.status(401).json({ error: 'No token, authorization denied' });
+            return;
         }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'defaultsecret');
-        const user = yield User_1.User.findById(decoded.userId);
-        if (!user) {
-            throw new Error('User not found');
+        try {
+            const decoded = jsonwebtoken_1.default.verify(token, jwt_1.JWT_CONFIG.secret);
+            const user = yield User_1.User.findById(decoded.userId).select('-password');
+            if (!user) {
+                res.status(401).json({ error: 'User not found' });
+                return;
+            }
+            req.user = user;
+            next();
         }
-        req.user = user.toObject();
-        next();
+        catch (err) {
+            res.status(401).json({ error: 'Token is not valid' });
+        }
     }
-    catch (error) {
-        res.status(401).json({ error: 'Please authenticate.' });
+    catch (err) {
+        console.error('Auth middleware error:', err);
+        res.status(500).json({ error: 'Server error' });
     }
 });
 exports.auth = auth;

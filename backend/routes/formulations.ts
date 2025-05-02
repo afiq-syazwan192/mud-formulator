@@ -1,13 +1,13 @@
-import express, { Router, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
-import { Formulation, IFormulation } from '../models/Formulation';
-import { auth } from '../middleware/auth';
+import { Formulation } from '../models/Formulation';
+import auth from '../middleware/auth';
 import { AuthRequest } from '../types/auth';
 
-const router: Router = express.Router();
+const router = Router();
 
-// Get all formulations for current user
-router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+// Get all formulations
+router.get('/', auth, async (req: AuthRequest, res: Response) => {
   try {
     const formulations = await Formulation.find({ createdBy: req.user?._id })
       .populate('products.product')
@@ -19,51 +19,46 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
   }
 });
 
-// Add a new formulation
-router.post(
-  '/',
-  auth,
-  [
-    body('mudType').notEmpty().withMessage('Mud type is required'),
-    body('mudWeight').isNumeric().withMessage('Mud weight must be a number'),
-    body('desiredOilPercentage').isNumeric().withMessage('Desired oil percentage must be a number'),
-    body('products').isArray().withMessage('Products must be an array'),
-    body('products.*.product').notEmpty().withMessage('Product ID is required'),
-    body('products.*.quantity').isNumeric().withMessage('Product quantity must be a number'),
-  ],
-  async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() });
-        return;
-      }
-
-      const { mudType, mudWeight, desiredOilPercentage, products } = req.body;
-
-      const formulation = new Formulation({
-        mudType,
-        mudWeight,
-        desiredOilPercentage,
-        products,
-        createdBy: req.user?._id,
-      });
-
-      await formulation.save();
-      
-      const populatedFormulation = await Formulation.findById(formulation._id)
-        .populate('products.product');
-      
-      res.status(201).json(populatedFormulation);
-    } catch (error) {
-      console.error('Add formulation error:', error);
-      res.status(500).json({ error: 'Server error' });
+// Add new formulation
+router.post('/', auth, [
+  body('mudType').notEmpty().withMessage('Mud type is required'),
+  body('mudWeight').isNumeric().withMessage('Mud weight must be a number'),
+  body('desiredOilPercentage').isNumeric().withMessage('Desired oil percentage must be a number'),
+  body('products').isArray().withMessage('Products must be an array'),
+  body('products.*.product').notEmpty().withMessage('Product ID is required'),
+  body('products.*.quantity').isNumeric().withMessage('Product quantity must be a number'),
+], async (req: AuthRequest, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-  }
-);
 
-// Delete a formulation
-router.delete('/:id', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+    const { mudType, mudWeight, desiredOilPercentage, products } = req.body;
+
+    const formulation = new Formulation({
+      mudType,
+      mudWeight,
+      desiredOilPercentage,
+      products,
+      createdBy: req.user?._id,
+    });
+
+    await formulation.save();
+    
+    const populatedFormulation = await Formulation.findById(formulation._id)
+      .populate('products.product');
+    
+    res.status(201).json(populatedFormulation);
+  } catch (error) {
+    console.error('Add formulation error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete formulation
+router.delete('/:id', auth, async (req: AuthRequest, res: Response) => {
   try {
     const formulation = await Formulation.findById(req.params.id).populate('createdBy');
     
