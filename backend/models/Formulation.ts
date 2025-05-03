@@ -49,4 +49,6 @@ const formulationSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-export const Formulation: Model<IFormulation> = mongoose.model<IFormulation>('Formulation', formulationSchema); 
+// Create and export the model
+const Formulation = mongoose.model<IFormulation>('Formulation', formulationSchema);
+export default Formulation; 

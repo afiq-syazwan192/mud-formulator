@@ -57,5 +57,6 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "ts-node": "^10.9.2"
-  }
+  },
+  "proxy": "http://localhost:5001"
 }

@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
-import { Formulation } from '../models/Formulation';
+import Formulation from '../models/Formulation';
 import auth from '../middleware/auth';
 import { AuthRequest } from '../types/auth';
 

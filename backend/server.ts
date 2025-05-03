@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth';
 import productRoutes from './routes/products';
 import formulationRoutes from './routes/formulations';
+import availableProductRoutes from './routes/availableProducts';
 import connectDB from './config/db';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/formulations', formulationRoutes);
+app.use('/api/available-products', availableProductRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
