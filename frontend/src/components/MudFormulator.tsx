@@ -25,39 +25,37 @@ import { BASE_OILS } from '../constants/baseOils';
 import AddAvailableProductForm from './AddAvailableProductForm';
 import axios from 'axios';
 
-const initialState: MudFormulation = {
+export const MudFormulator: React.FC = () => {
+  const [formulation, setFormulation] = useState<MudFormulation>({
     mudType: 'Water-Based Mud',
     weighted: 'Weighted',
     mudWeight: 10.00,
     desiredOil: 0,
     baseOil: {
-        type: 'Canola Oil',
-        ratio: 100,
-        specificGravity: 0.930
+      type: 'Canola Oil',
+      ratio: 100,
+      specificGravity: 0.930
     },
     waterAndSalt: [
-        {
-            type: 'KCl',
-            salinity: 8,
-            saltPurity: 95,
-            wtPercent: 'Wt% Salt'
-        },
-        {
-            type: 'Water',
-            salinity: 0,
-            saltPurity: 0,
-            wtPercent: 'Wt% Salt'
-        }
+      {
+        type: 'KCl',
+        salinity: 8,
+        saltPurity: 95,
+        wtPercent: 'Wt% Salt'
+      },
+      {
+        type: 'Water',
+        salinity: 0,
+        saltPurity: 0,
+        wtPercent: 'Wt% Salt'
+      }
     ],
     weightMaterial: {
-        type: 'MIL-BAR',
-        specificGravity: 4.20
+      type: 'MIL-BAR',
+      specificGravity: 4.20
     },
     products: []
-};
-
-export const MudFormulator: React.FC = () => {
-  const [formulation, setFormulation] = useState<MudFormulation>(initialState);
+  });
   const [calculationResults, setCalculationResults] = useState<CalculationResult | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -65,87 +63,94 @@ export const MudFormulator: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isAddAvailableModalOpen, setIsAddAvailableModalOpen] = useState(false);
 
-  const handleProductChange = (index: number, updatedProduct: Product) => {
-    const newProducts = [...formulation.products];
-    newProducts[index] = updatedProduct;
-    setFormulation({ ...formulation, products: newProducts });
-  };
-
-  const validateInputs = (): boolean => {
-    const newErrors: {[key: string]: string} = {};
-
-    if (formulation.mudWeight <= 0) {
-        newErrors.mudWeight = 'Mud weight must be greater than 0';
-    }
-    if (formulation.desiredOil < 0 || formulation.desiredOil > 100) {
-        newErrors.desiredOil = 'Desired oil must be between 0 and 100%';
-    }
-    if (formulation.baseOil.ratio < 0 || formulation.baseOil.ratio > 100) {
-        newErrors.baseOilRatio = 'Base oil ratio must be between 0 and 100%';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleCalculate = () => {
-    if (!validateInputs()) {
-        return;
-    }
-    
-    try {
-        const results = calculateMudFormulation(
-            formulation.mudWeight,
-            formulation.products,
-            formulation.baseOil,
-            formulation.waterAndSalt,
-            formulation.weightMaterial
-        );
-        
-        setCalculationResults(results);
-    } catch (error) {
-        console.error('Calculation error:', error);
-        setErrors({ calculation: 'Error performing calculations' });
-    }
-  };
-
-  const handleReset = () => {
-    setFormulation(initialState);
-    setCalculationResults(null);
-  };
-
-  const handleResetValues = () => {
-    setFormulation({
-      ...formulation,
-      products: formulation.products.map(p => ({ ...p, concentration: 0 }))
-    });
-    setCalculationResults(null);
-  };
-
-  const handleAddProduct = (newProduct: Product) => {
+  const handleAddProduct = (product: Product) => {
     setFormulation(prev => ({
       ...prev,
-      products: [...prev.products, newProduct]
+      products: [...prev.products, product]
+    }));
+  };
+
+  const handleProductChange = (index: number, updatedProduct: Product) => {
+    setFormulation(prev => ({
+      ...prev,
+      products: prev.products.map((product, i) => 
+        i === index ? updatedProduct : product
+      )
     }));
   };
 
   const handleProductRemove = (index: number) => {
     setFormulation(prev => ({
-        ...prev,
-        products: prev.products.filter((_, i) => i !== index)
+      ...prev,
+      products: prev.products.filter((_, i) => i !== index)
     }));
   };
 
-  const handleConfirmRemove = () => {
-    if (productToRemove !== null) {
-      setFormulation(prev => ({
-        ...prev,
-        products: prev.products.filter((_, i) => i !== productToRemove)
-      }));
-      setCalculationResults(null);
+  const handleCalculate = () => {
+    // Calculation logic here
+  };
+
+  const handleReset = () => {
+    setFormulation({
+      mudType: 'Water-Based Mud',
+      weighted: 'Weighted',
+      mudWeight: 10.00,
+      desiredOil: 0,
+      baseOil: {
+        type: 'Canola Oil',
+        ratio: 100,
+        specificGravity: 0.930
+      },
+      waterAndSalt: [
+        {
+          type: 'KCl',
+          salinity: 8,
+          saltPurity: 95,
+          wtPercent: 'Wt% Salt'
+        },
+        {
+          type: 'Water',
+          salinity: 0,
+          saltPurity: 0,
+          wtPercent: 'Wt% Salt'
+        }
+      ],
+      weightMaterial: {
+        type: 'MIL-BAR',
+        specificGravity: 4.20
+      },
+      products: []
+    });
+  };
+
+  const handleSaveFormulation = async () => {
+    try {
+      const response = await fetch('/api/formulations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          mudType: formulation.mudType,
+          mudWeight: formulation.mudWeight,
+          desiredOilPercentage: formulation.desiredOil,
+          products: formulation.products.map(product => ({
+            product: product.name,
+            quantity: product.concentration
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save formulation');
+      }
+
+      // Reset the form after successful save
+      handleReset();
+    } catch (error) {
+      console.error('Error saving formulation:', error);
     }
-    setConfirmDialogOpen(false);
-    setProductToRemove(null);
   };
 
   const handleAddAvailableProduct = async (product: { 
@@ -489,7 +494,11 @@ export const MudFormulator: React.FC = () => {
       <ConfirmDialog
         open={confirmDialogOpen}
         onClose={() => setConfirmDialogOpen(false)}
-        onConfirm={handleConfirmRemove}
+        onConfirm={() => {
+          handleProductRemove(productToRemove as number);
+          setConfirmDialogOpen(false);
+          setProductToRemove(null);
+        }}
         title="Remove Product"
         message="Are you sure you want to remove this product?"
       />

@@ -17,7 +17,8 @@ export interface CreateProductData {
 }
 
 export const getProducts = async (): Promise<Product[]> => {
-  const response = await api.get<Product[]>('/api/products');
+  // const response = await api.get<Product[]>('/api/products');
+  const response = await api.get<Product[]>('/api/available-products');
   return response.data;
 };
 
