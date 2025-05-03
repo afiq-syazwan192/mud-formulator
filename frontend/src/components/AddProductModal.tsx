@@ -10,12 +10,12 @@ import {
     InputLabel
 } from '@mui/material';
 import { Product } from '../types/types';
-import { AVAILABLE_PRODUCTS } from '../constants/products';
 
 interface AddProductModalProps {
     open: boolean;
     onClose: () => void;
     onAdd: (product: Product) => void;
+    availableProducts: { name: string; specificGravity: number }[];
 }
 
 const modalStyle = {
@@ -33,20 +33,20 @@ const modalStyle = {
 export const AddProductModal: React.FC<AddProductModalProps> = ({
     open,
     onClose,
-    onAdd
+    onAdd,
+    availableProducts
 }) => {
     const [selectedProduct, setSelectedProduct] = useState('');
 
     const handleAdd = () => {
-        const productDetails = AVAILABLE_PRODUCTS.find(p => p.name === selectedProduct);
+        const productDetails = availableProducts.find(p => p.name === selectedProduct);
         if (productDetails) {
             const newProduct = {
                 name: productDetails.name,
                 concentration: 0,
-                specificGravity: productDetails.defaultSG,
-                additionMethod: productDetails.defaultMethod
+                specificGravity: productDetails.specificGravity,
+                additionMethod: 'lb/bbl'
             };
-            
             onAdd(newProduct);
             setSelectedProduct('');
             onClose();
@@ -56,30 +56,23 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     return (
         <Modal open={open} onClose={onClose}>
             <Box sx={modalStyle}>
-                <Typography variant="h6" component="h2" mb={2}>
-                    Add New Product
-                </Typography>
+                <Typography variant="h6" mb={2}>Add New Product</Typography>
                 <FormControl fullWidth>
                     <InputLabel>Select Product</InputLabel>
                     <Select
                         value={selectedProduct}
-                        onChange={(e) => setSelectedProduct(e.target.value)}
+                        onChange={e => setSelectedProduct(e.target.value as string)}
                         label="Select Product"
                     >
-                        {AVAILABLE_PRODUCTS.map((product) => (
+                        {availableProducts.map(product => (
                             <MenuItem key={product.name} value={product.name}>
                                 {product.name}
                             </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button 
-                        variant="contained" 
-                        onClick={handleAdd}
-                        disabled={!selectedProduct}
-                    >
+                <Box mt={2} display="flex" justifyContent="flex-end">
+                    <Button variant="contained" onClick={handleAdd} disabled={!selectedProduct}>
                         Add
                     </Button>
                 </Box>

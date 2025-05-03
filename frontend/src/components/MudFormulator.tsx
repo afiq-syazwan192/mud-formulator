@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Select,
@@ -12,6 +12,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import { MudFormulation, Product, CalculationResult } from '../types/types';
 import { ProductTable } from './ProductTable';
@@ -62,6 +68,15 @@ export const MudFormulator: React.FC = () => {
   const [productToRemove, setProductToRemove] = useState<number | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isAddAvailableModalOpen, setIsAddAvailableModalOpen] = useState(false);
+  const [labBbls, setLabBbls] = useState<number>(4.0);
+  const [availableProducts, setAvailableProducts] = useState<{ name: string; specificGravity: number }[]>([]);
+
+  useEffect(() => {
+    fetch('/api/available-products')
+      .then(res => res.json())
+      .then(data => setAvailableProducts(data))
+      .catch(err => console.error('Failed to fetch available products', err));
+  }, []);
 
   const handleAddProduct = (product: Product) => {
     setFormulation(prev => ({
@@ -87,7 +102,19 @@ export const MudFormulator: React.FC = () => {
   };
 
   const handleCalculate = () => {
-    // Calculation logic here
+    try {
+      const results = calculateMudFormulation(
+        formulation.mudWeight,
+        formulation.products,
+        formulation.baseOil,
+        formulation.waterAndSalt,
+        formulation.weightMaterial
+      );
+      setCalculationResults(results);
+    } catch (error) {
+      console.error('Calculation error:', error);
+      setErrors({ calculation: 'Error performing calculations' });
+    }
   };
 
   const handleReset = () => {
@@ -412,25 +439,6 @@ export const MudFormulator: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Display Calculation Results */}
-        {calculationResults && (
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6">Calculation Results</Typography>
-              <Typography>Total Volume: {calculationResults.totalVolume.toFixed(2)} bbl</Typography>
-              <Typography>Total Weight: {calculationResults.totalWeight.toFixed(2)} lb</Typography>
-              <Typography>Final Mud Weight: {calculationResults.finalMudWeight.toFixed(2)} ppg</Typography>
-              <Typography variant="subtitle1" sx={{ mt: 2 }}>Product Amounts:</Typography>
-              {calculationResults.productAmounts.map((result, index) => (
-                <Typography key={index}>
-                  {result.name}: {result.amount.toFixed(2)} {result.unit} 
-                  ({result.volume.toFixed(4)} bbl)
-                </Typography>
-              ))}
-            </Paper>
-          </Grid>
-        )}
-
         {/* Products Section */}
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
@@ -462,9 +470,64 @@ export const MudFormulator: React.FC = () => {
               products={formulation.products}
               onProductChange={handleProductChange}
               onProductRemove={handleProductRemove}
+              availableProducts={availableProducts}
             />
           </Paper>
         </Grid>
+
+        {/* Display Calculation Results (moved below Product Table) */}
+        {calculationResults && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography sx={{ mr: 2 }}># Lab bbls</Typography>
+                <TextField
+                  type="number"
+                  value={labBbls}
+                  onChange={e => setLabBbls(Number(e.target.value))}
+                  inputProps={{ min: 0.1, step: 0.1 }}
+                  size="small"
+                  sx={{ width: 120 }}
+                />
+              </Box>
+              <Typography variant="h6">Calculation Results</Typography>
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Mixing Order</TableCell>
+                      <TableCell>Product</TableCell>
+                      <TableCell align="right">bbl/bbl</TableCell>
+                      <TableCell align="right">lb/bbl</TableCell>
+                      <TableCell align="right">Total bbl</TableCell>
+                      <TableCell align="right">Total lb</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {calculationResults.productAmounts.map((result, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{result.name}</TableCell>
+                        <TableCell align="right">{result.volume.toFixed(4)}</TableCell>
+                        <TableCell align="right">{result.amount.toFixed(2)}</TableCell>
+                        <TableCell align="right">{(result.volume * labBbls).toFixed(4)}</TableCell>
+                        <TableCell align="right">{(result.amount * labBbls).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {/* Totals row */}
+                    <TableRow>
+                      <TableCell colSpan={2}><b>Totals</b></TableCell>
+                      <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0).toFixed(4)}</b></TableCell>
+                      <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}</b></TableCell>
+                      <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0) * labBbls).toFixed(4)}</b></TableCell>
+                      <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0) * labBbls).toFixed(2)}</b></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
 
       {/* Add Product Modal */}
@@ -472,6 +535,7 @@ export const MudFormulator: React.FC = () => {
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddProduct}
+        availableProducts={availableProducts}
       />
 
       {/* Add Available Product Modal */}

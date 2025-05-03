@@ -15,23 +15,23 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Product } from '../types/types';
-import { AVAILABLE_PRODUCTS } from '../constants/products';
 
 interface ProductTableProps {
   products: Product[];
-  onProductChange: (index: number, updatedProduct: Product) => void;
+  onProductChange: (index: number, product: Product) => void;
   onProductRemove: (index: number) => void;
+  availableProducts: { name: string; specificGravity: number }[];
 }
 
-export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductChange, onProductRemove }) => {
+export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductChange, onProductRemove, availableProducts }) => {
   const handleProductNameChange = (index: number, productName: string) => {
-    const selectedProduct = AVAILABLE_PRODUCTS.find(p => p.name === productName);
+    const selectedProduct = availableProducts.find(p => p.name === productName);
     if (selectedProduct) {
       onProductChange(index, {
         ...products[index],
         name: productName,
-        specificGravity: selectedProduct.defaultSG,
-        additionMethod: selectedProduct.defaultMethod
+        specificGravity: selectedProduct.specificGravity,
+        additionMethod: products[index].additionMethod || 'lb/bbl'
       });
     }
   };
@@ -55,9 +55,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
                 <Select
                   fullWidth
                   value={product.name}
-                  onChange={(e) => handleProductNameChange(index, e.target.value)}
+                  onChange={(e) => handleProductNameChange(index, e.target.value as string)}
                 >
-                  {AVAILABLE_PRODUCTS.map((availableProduct) => (
+                  {availableProducts.map((availableProduct) => (
                     <MenuItem 
                       key={availableProduct.name} 
                       value={availableProduct.name}
@@ -92,7 +92,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
                   value={product.additionMethod}
                   onChange={(e) => onProductChange(index, {
                     ...product,
-                    additionMethod: e.target.value
+                    additionMethod: e.target.value as string
                   })}
                 >
                   <MenuItem value="lb/bbl">lb/bbl</MenuItem>
