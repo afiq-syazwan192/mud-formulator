@@ -28,5 +28,5 @@ export const createProduct = async (data: CreateProductData): Promise<Product> =
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
-  await api.delete(`/api/products/${id}`);
+  await api.delete(`/api/available-products/${id}`);
 }; 

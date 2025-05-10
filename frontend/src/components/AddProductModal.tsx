@@ -45,7 +45,8 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 name: productDetails.name,
                 concentration: 0,
                 specificGravity: productDetails.specificGravity,
-                additionMethod: 'lb/bbl'
+                additionMethod: 'lb/bbl',
+                mixingOrder: 0
             };
             onAdd(newProduct);
             setSelectedProduct('');

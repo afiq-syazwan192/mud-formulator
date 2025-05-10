@@ -30,6 +30,63 @@ import { AVAILABLE_PRODUCTS } from '../constants/products';
 import { BASE_OILS } from '../constants/baseOils';
 import AddAvailableProductForm from './AddAvailableProductForm';
 import axios from 'axios';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableCalcRowProps {
+  id: string;
+  result: {
+    name: string;
+    amount: number;
+    volume: number;
+    unit: string;
+  };
+  index: number;
+  labBbls: number;
+}
+
+const SortableCalcRow: React.FC<SortableCalcRowProps> = ({ id, result, index, labBbls }) => {
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell><span {...attributes} {...listeners}><DragIndicatorIcon /></span></TableCell>
+      <TableCell>{index + 1}</TableCell>
+      <TableCell>{result.name}</TableCell>
+      <TableCell align="right">{result.volume.toFixed(4)}</TableCell>
+      <TableCell align="right">{result.amount.toFixed(2)}</TableCell>
+      <TableCell align="right">{(result.volume * labBbls).toFixed(4)}</TableCell>
+      <TableCell align="right">{(result.amount * labBbls).toFixed(2)}</TableCell>
+    </TableRow>
+  );
+};
 
 export const MudFormulator: React.FC = () => {
   const [formulation, setFormulation] = useState<MudFormulation>({
@@ -71,6 +128,15 @@ export const MudFormulator: React.FC = () => {
   const [labBbls, setLabBbls] = useState<number>(4.0);
   const [availableProducts, setAvailableProducts] = useState<{ name: string; specificGravity: number }[]>([]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const [calcOrder, setCalcOrder] = useState<number[]>([]);
+
   useEffect(() => {
     fetch('/api/available-products')
       .then(res => res.json())
@@ -78,10 +144,19 @@ export const MudFormulator: React.FC = () => {
       .catch(err => console.error('Failed to fetch available products', err));
   }, []);
 
-  const handleAddProduct = (product: Product) => {
+  useEffect(() => {
+    if (calculationResults) {
+      setCalcOrder(calculationResults.productAmounts.map((_, idx) => idx));
+    }
+  }, [calculationResults]);
+
+  const handleProductAdd = (product: Product) => {
     setFormulation(prev => ({
       ...prev,
-      products: [...prev.products, product]
+      products: [...prev.products, {
+        ...product,
+        mixingOrder: prev.products.length + 1
+      }]
     }));
   };
 
@@ -190,6 +265,27 @@ export const MudFormulator: React.FC = () => {
       console.log('Available product added successfully');
     } catch (error) {
       console.error('Error adding available product:', error);
+    }
+  };
+
+  const handleCalcDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = calcOrder.indexOf(Number(active.id));
+      const newIndex = calcOrder.indexOf(Number(over.id));
+      const newOrder = arrayMove(calcOrder, oldIndex, newIndex);
+      setCalcOrder(newOrder);
+      // Update mixingOrder in formulation.products if the result is a product
+      if (calculationResults) {
+        const reordered = newOrder.map(i => calculationResults.productAmounts[i]);
+        setFormulation(prev => ({
+          ...prev,
+          products: prev.products.map(p => {
+            const idx = reordered.findIndex(r => r.name === p.name);
+            return idx !== -1 ? { ...p, mixingOrder: idx + 1 } : p;
+          })
+        }));
+      }
     }
   };
 
@@ -492,38 +588,49 @@ export const MudFormulator: React.FC = () => {
               </Box>
               <Typography variant="h6">Calculation Results</Typography>
               <TableContainer component={Paper} sx={{ mt: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Mixing Order</TableCell>
-                      <TableCell>Product</TableCell>
-                      <TableCell align="right">bbl/bbl</TableCell>
-                      <TableCell align="right">lb/bbl</TableCell>
-                      <TableCell align="right">Total bbl</TableCell>
-                      <TableCell align="right">Total lb</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {calculationResults.productAmounts.map((result, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{result.name}</TableCell>
-                        <TableCell align="right">{result.volume.toFixed(4)}</TableCell>
-                        <TableCell align="right">{result.amount.toFixed(2)}</TableCell>
-                        <TableCell align="right">{(result.volume * labBbls).toFixed(4)}</TableCell>
-                        <TableCell align="right">{(result.amount * labBbls).toFixed(2)}</TableCell>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleCalcDragEnd}
+                >
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell></TableCell>
+                        <TableCell>Mixing Order</TableCell>
+                        <TableCell>Product</TableCell>
+                        <TableCell align="right">bbl/bbl</TableCell>
+                        <TableCell align="right">lb/bbl</TableCell>
+                        <TableCell align="right">Total bbl</TableCell>
+                        <TableCell align="right">Total lb</TableCell>
                       </TableRow>
-                    ))}
-                    {/* Totals row */}
-                    <TableRow>
-                      <TableCell colSpan={2}><b>Totals</b></TableCell>
-                      <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0).toFixed(4)}</b></TableCell>
-                      <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}</b></TableCell>
-                      <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0) * labBbls).toFixed(4)}</b></TableCell>
-                      <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0) * labBbls).toFixed(2)}</b></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableHead>
+                    <TableBody>
+                      <SortableContext
+                        items={calcOrder.map(i => i.toString())}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {calcOrder.map((i, idx) => (
+                          <SortableCalcRow
+                            key={i}
+                            id={i.toString()}
+                            result={calculationResults.productAmounts[i]}
+                            index={idx}
+                            labBbls={labBbls}
+                          />
+                        ))}
+                      </SortableContext>
+                      {/* Totals row */}
+                      <TableRow>
+                        <TableCell colSpan={3}><b>Totals</b></TableCell>
+                        <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0).toFixed(4)}</b></TableCell>
+                        <TableCell align="right"><b>{calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}</b></TableCell>
+                        <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.volume, 0) * labBbls).toFixed(4)}</b></TableCell>
+                        <TableCell align="right"><b>{(calculationResults.productAmounts.reduce((sum, r) => sum + r.amount, 0) * labBbls).toFixed(2)}</b></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </DndContext>
               </TableContainer>
             </Paper>
           </Grid>
@@ -534,7 +641,7 @@ export const MudFormulator: React.FC = () => {
       <AddProductModal
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddProduct}
+        onAdd={handleProductAdd}
         availableProducts={availableProducts}
       />
 

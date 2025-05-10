@@ -4,6 +4,7 @@ export interface Product {
     concentration: number;
     specificGravity: number;
     additionMethod: string;
+    mixingOrder: number;
 }
 
 // Main interface for the entire mud formulation

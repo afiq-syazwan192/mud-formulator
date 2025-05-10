@@ -31,7 +31,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductC
         ...products[index],
         name: productName,
         specificGravity: selectedProduct.specificGravity,
-        additionMethod: products[index].additionMethod || 'lb/bbl'
+        additionMethod: products[index].additionMethod || 'lb/bbl',
+        mixingOrder: products[index].mixingOrder
       });
     }
   };
