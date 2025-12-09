@@ -40,7 +40,7 @@ A web application for formulating and managing drilling mud compositions. This a
 
 1. Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone <this repository url>
 cd mud-formulator
 ```
 
